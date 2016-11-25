@@ -1,6 +1,10 @@
 package com.feicui.wnews.myapplication;
 
 import android.app.FragmentTransaction;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -13,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -25,9 +30,11 @@ import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.jpush.android.api.JPushInterface;
+
 import static com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.TOUCHMODE_MARGIN;
 
-public class MainActivity extends FragmentActivity {
+public class MainActivity extends FragmentActivity implements View.OnClickListener{
     private FragmentTransaction fragmentTransaction;
     private FragmentNews fragment;
     private FragmentJunshi fragmentJunshi;
@@ -39,6 +46,8 @@ public class MainActivity extends FragmentActivity {
     private ViewPager mViewPager;
     private SxAdapter sxadapter;
     private ImageView cursor;
+    Button start;
+    public static boolean isForeground = false;
     //动画图片宽度
     private int bmpW;
     //动画图片偏移量
@@ -224,12 +233,78 @@ public class MainActivity extends FragmentActivity {
         ViewGroup.LayoutParams layoutParams = (DrawerLayout.LayoutParams) llRight.getLayoutParams();
         layoutParams.width = getResources().getDisplayMetrics().widthPixels * 1 / 2;
         llRight.setLayoutParams(layoutParams);
+
+        start= (Button) findViewById(R.id.b_start);
+        start.setOnClickListener(this);
+        registerMessageReceiver();
+
+
+
+
+    }
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.b_start:
+                init();
+                break;
+        }
+    }
+    private void init(){
+        JPushInterface.init(getApplicationContext());
+    }
+
+    @Override
+    protected void onResume() {
+        isForeground = true;
+        super.onResume();
     }
 
 
+    @Override
+    protected void onPause() {
+        isForeground = false;
+        super.onPause();
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        unregisterReceiver(mMessageReceiver);
+        super.onDestroy();
+    }
+    private MessageReceiver mMessageReceiver;
+    public static final String MESSAGE_RECEIVED_ACTION = ".MESSAGE_RECEIVED_ACTION";
+    public static final String KEY_TITLE = "title";
+    public static final String KEY_MESSAGE = "message";
+    public static final String KEY_EXTRAS = "extras";
+
+    public void registerMessageReceiver() {
+        mMessageReceiver = new MessageReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+        filter.addAction(MESSAGE_RECEIVED_ACTION);
+        registerReceiver(mMessageReceiver, filter);
+    }
+
+    public class MessageReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (MESSAGE_RECEIVED_ACTION.equals(intent.getAction())) {
+                String messge = intent.getStringExtra(KEY_MESSAGE);
+                String extras = intent.getStringExtra(KEY_EXTRAS);
+                StringBuilder showMsg = new StringBuilder();
+                showMsg.append(KEY_MESSAGE + " : " + messge + "\n");
+                if (!ExampleUtil.isEmpty(extras)) {
+                    showMsg.append(KEY_EXTRAS + " : " + extras + "\n");
+                }
+            }
+        }
+    }
+
     /**
-     * 添加头部尾部
-     */
+             * 添加头部尾部
+             */
     private void initSlidingmenu() {
         SlidingMenu slidingMenu = new SlidingMenu(this);
         slidingMenu.setMode(slidingMenu.LEFT);

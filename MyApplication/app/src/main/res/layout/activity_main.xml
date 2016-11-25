@@ -97,6 +97,10 @@
         android:clickable="true"
         android:layout_gravity="right"
         android:orientation="vertical">
-
+        <Button
+            android:id="@+id/b_start"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="开启推送"/>
     </LinearLayout>
 </android.support.v4.widget.DrawerLayout>
